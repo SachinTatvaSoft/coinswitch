@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, type JSX } from "react";
 import { Button } from "../../components/ui/button";
 import { Input } from "../../components/ui/input";
 import { Label } from "../../components/ui/label";
@@ -12,15 +12,57 @@ import {
 import { Eye, EyeOff, TrendingUp, Shield, Zap } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Images } from "../../assets/assets";
+
+const VALID_EMAIL = "user@yopmail.com";
+const VALID_PASSWORD = "Password@123";
+
 const Login = () => {
   const [showPassword, setShowPassword] = useState(false);
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  const [formData, setFormData] = useState({ email: "", password: "" });
+  const [error, setError] = useState("");
   const navigate = useNavigate();
+
+  const handleChange =
+    (field: "email" | "password") =>
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      setFormData((prev) => ({ ...prev, [field]: e.target.value }));
+      setError("");
+    };
+
+  const togglePasswordVisibility = () => {
+    setShowPassword((prev) => !prev);
+  };
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
-    navigate("/dashboard");
+
+    if (!formData.email && !formData.password) {
+      setError("Please enter your email and password.");
+      return;
+    }
+
+    if (!formData.email) {
+      setError("Please enter your email.");
+      return;
+    }
+
+    if (!formData.password) {
+      setError("Please enter your password.");
+      return;
+    }
+
+    if (
+      formData.email !== VALID_EMAIL ||
+      formData.password !== VALID_PASSWORD
+    ) {
+      setError("Email and password do not match.");
+      return;
+    }
+
+    setError("");
+    if (error.length === 0) {
+      navigate("/dashboard");
+    }
   };
 
   return (
@@ -62,41 +104,26 @@ const Login = () => {
             </div>
 
             <div className="space-y-6 max-w-lg">
-              <div className="flex items-start space-x-4">
-                <div className="flex-shrink-0 w-12 h-12 rounded-lg bg-gradient-primary flex items-center justify-center">
+              <FeatureItem
+                icon={
                   <TrendingUp className="w-6 h-6 text-primary-foreground" />
-                </div>
-                <div>
-                  <h3 className="text-lg font-semibold">Real-time Tracking</h3>
-                  <p className="text-muted-foreground">
-                    Live cryptocurrency prices and market data
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex items-start space-x-4">
-                <div className="flex-shrink-0 w-12 h-12 rounded-lg bg-[#16a249]/20 border-[#16a249]/20 border flex items-center justify-center">
-                  <Shield className="w-6 h-6 text-[#16a249]" />
-                </div>
-                <div>
-                  <h3 className="text-lg font-semibold">Secure & Private</h3>
-                  <p className="text-muted-foreground">
-                    Your data stays secure with bank-level encryption
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex items-start space-x-4">
-                <div className="flex-shrink-0 w-12 h-12 rounded-lg bg-[#e7b008]/20 border border-[#e7b008]/20 flex items-center justify-center">
-                  <Zap className="w-6 h-6 text-[#e7b008]" />
-                </div>
-                <div>
-                  <h3 className="text-lg font-semibold">Lightning Fast</h3>
-                  <p className="text-muted-foreground">
-                    Instant updates and responsive interface
-                  </p>
-                </div>
-              </div>
+                }
+                bg="bg-gradient-primary"
+                title="Real-time Tracking"
+                description="Live cryptocurrency prices and market data"
+              />
+              <FeatureItem
+                icon={<Shield className="w-6 h-6 text-[#16a249]" />}
+                bg="bg-[#16a249]/20 border-[#16a249]/20 border"
+                title="Secure & Private"
+                description="Your data stays secure with bank-level encryption"
+              />
+              <FeatureItem
+                icon={<Zap className="w-6 h-6 text-[#e7b008]" />}
+                bg="bg-[#e7b008]/20 border border-[#e7b008]/20"
+                title="Lightning Fast"
+                description="Instant updates and responsive interface"
+              />
             </div>
           </div>
         </div>
@@ -123,34 +150,32 @@ const Login = () => {
               </CardHeader>
               <CardContent>
                 <form onSubmit={handleLogin} className="space-y-4">
-                  <div className="space-y-2">
+                  <div className="space-y-2 relative">
                     <Label htmlFor="email">Email</Label>
                     <Input
                       id="email"
                       type="email"
                       placeholder="Enter your email"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
+                      value={formData.email}
+                      onChange={handleChange("email")}
                       className="bg-background/50 border-border/50 focus:bg-background/80 transition-smooth"
-                      required
                     />
                   </div>
 
-                  <div className="space-y-2">
+                  <div className="space-y-2 relative">
                     <Label htmlFor="password">Password</Label>
                     <div className="relative">
                       <Input
                         id="password"
                         type={showPassword ? "text" : "password"}
                         placeholder="Enter your password"
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
+                        value={formData.password}
+                        onChange={handleChange("password")}
                         className="bg-background/50 border-border/50 focus:bg-background/80 transition-smooth pr-10"
-                        required
                       />
                       <button
                         type="button"
-                        onClick={() => setShowPassword(!showPassword)}
+                        onClick={togglePasswordVisibility}
                         className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-smooth"
                       >
                         {showPassword ? (
@@ -160,9 +185,10 @@ const Login = () => {
                         )}
                       </button>
                     </div>
+                    {error && <p className="text-red-500 text-sm">{error}</p>}
                   </div>
 
-                  <div className="flex items-center justify-between text-sm">
+                  <div className="flex items-center justify-between text-sm mt-2">
                     <label className="flex items-center space-x-2">
                       <input
                         type="checkbox"
@@ -170,15 +196,9 @@ const Login = () => {
                       />
                       <span className="text-muted-foreground">Remember me</span>
                     </label>
-                    <a
-                      href="#"
-                      className="text-primary hover:text-primary-glow transition-smooth"
-                    >
-                      Forgot password?
-                    </a>
                   </div>
 
-                  <Button type="submit" size="lg" className="w-full">
+                  <Button type="submit" size="lg" className="w-full mt-6">
                     Sign In
                   </Button>
                 </form>
@@ -190,5 +210,29 @@ const Login = () => {
     </div>
   );
 };
+
+const FeatureItem = ({
+  icon,
+  bg,
+  title,
+  description,
+}: {
+  icon: JSX.Element;
+  bg: string;
+  title: string;
+  description: string;
+}) => (
+  <div className="flex items-start space-x-4">
+    <div
+      className={`flex-shrink-0 w-12 h-12 rounded-lg ${bg} flex items-center justify-center`}
+    >
+      {icon}
+    </div>
+    <div>
+      <h3 className="text-lg font-semibold">{title}</h3>
+      <p className="text-muted-foreground">{description}</p>
+    </div>
+  </div>
+);
 
 export default Login;
