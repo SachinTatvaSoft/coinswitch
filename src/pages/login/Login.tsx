@@ -12,15 +12,20 @@ import {
 import { Eye, EyeOff, TrendingUp, Shield, Zap } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Images } from "../../assets/assets";
+import { useDispatch } from "react-redux";
+import type { AppDispatch } from "../../store";
+import { login } from "../../slices/authSlice";
 
 const VALID_EMAIL = "user@yopmail.com";
 const VALID_PASSWORD = "Password@123";
 
 const Login = () => {
+  const dispatch = useDispatch<AppDispatch>();
+  const navigate = useNavigate();
+
   const [showPassword, setShowPassword] = useState(false);
   const [formData, setFormData] = useState({ email: "", password: "" });
   const [error, setError] = useState("");
-  const navigate = useNavigate();
 
   const handleChange =
     (field: "email" | "password") =>
@@ -61,6 +66,7 @@ const Login = () => {
 
     setError("");
     if (error.length === 0) {
+      dispatch(login());
       navigate("/dashboard");
     }
   };
