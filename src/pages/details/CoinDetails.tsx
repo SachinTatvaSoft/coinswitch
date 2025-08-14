@@ -9,15 +9,20 @@ import Footer from "../../components/Footer";
 import Loader from "../../components/Loader";
 import { API_ROUTE, FE_ROUTE } from "../../config/app-routes";
 import apiService from "../../config/api";
-import { formatCryptoPrice, formatMarketCap } from "../../lib/utils";
+import { formatCurrency, formatMarketCap } from "../../lib/utils";
 import { CURRENCY } from "../../constant/constant";
 import type { CoinData } from "../../types";
+import { useDispatch, useSelector } from "react-redux";
+import { toggleWatchlist } from "../../slices/watchlistSlice";
+import type { RootState } from "../../store";
 
 const CoinDetail = () => {
   const { coinId } = useParams<{ coinId: string }>();
   const navigate = useNavigate();
+  const dispatch = useDispatch();
+  const watchlistIds = useSelector((state: RootState) => state.watchlist.ids);
+
   const [coin, setCoin] = useState<CoinData | null>(null);
-  const [isInWatchlist, setIsInWatchlist] = useState(false);
   const [loading, setLoading] = useState(true);
 
   const getCoinDetails = useCallback(async () => {
@@ -43,7 +48,6 @@ const CoinDetail = () => {
 
       if (Object.keys(response.data).length > 0 && response.status === 200) {
         const data = response.data;
-
         const parsedCoin: CoinData = {
           id: data.id,
           name: data.name,
@@ -60,11 +64,10 @@ const CoinDetail = () => {
           high_24h: data.market_data?.high_24h?.[CURRENCY] ?? 0,
           low_24h: data.market_data?.low_24h?.[CURRENCY] ?? 0,
         };
-
         setCoin(parsedCoin);
       }
     } catch (error) {
-      console.error("Failed to fetch top coins", error);
+      console.error("Failed to fetch coin details", error);
     } finally {
       setLoading(false);
     }
@@ -75,19 +78,19 @@ const CoinDetail = () => {
   }, [coinId, getCoinDetails]);
 
   const handleWatchlistToggle = () => {
-    setIsInWatchlist(!isInWatchlist);
+    if (!coin) return;
+    dispatch(toggleWatchlist(coin.id));
   };
 
+  const isInWatchlist = coin ? watchlistIds.includes(coin.id) : false;
   const isPositive = (coin?.price_change_percentage_24h ?? 0) > 0;
 
-  if (loading && !coin) {
-    return <Loader />;
-  }
+  if (loading && !coin) return <Loader />;
 
   return (
     <div className="min-h-screen flex flex-col">
       <Header />
-      <div className="container px-4 py-6 space-y-6 max-w-[1440px] mx-auto">
+      <div className="flex-1 container px-4 py-8 space-y-8 max-w-[1440px] mx-auto">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-4">
             <Button
@@ -119,14 +122,14 @@ const CoinDetail = () => {
           <Button
             variant="outline"
             onClick={handleWatchlistToggle}
-            className="flex items-center space-x-2"
+            className="flex items-center space-x-2 bg-transparent hover:bg-transparent cursor-pointer"
           >
             <Star
               className={`h-4 w-4 ${
                 isInWatchlist ? "fill-accent text-accent" : ""
               }`}
             />
-            <span>
+            <span className="hidden sm:inline">
               {isInWatchlist ? "Remove from Watchlist" : "Add to Watchlist"}
             </span>
           </Button>
@@ -139,7 +142,7 @@ const CoinDetail = () => {
                 Current Price
               </p>
               <p className="text-3xl font-bold text-foreground">
-                {formatCryptoPrice(coin?.current_price as number)}
+                {formatCurrency(coin?.current_price as number, CURRENCY)}
               </p>
               <div
                 className={`flex items-center space-x-1 mt-1 ${
@@ -161,14 +164,14 @@ const CoinDetail = () => {
             <div>
               <p className="text-sm text-muted-foreground mb-1">24h High</p>
               <p className="text-xl font-semibold text-foreground">
-                {formatCryptoPrice(coin?.high_24h ?? 0)}
+                {formatCurrency(coin?.high_24h ?? 0, CURRENCY)}
               </p>
             </div>
 
             <div>
               <p className="text-sm text-muted-foreground mb-1">24h Low</p>
               <p className="text-xl font-semibold text-foreground">
-                {formatCryptoPrice(coin?.low_24h ?? 0)}
+                {formatCurrency(coin?.low_24h ?? 0, CURRENCY)}
               </p>
             </div>
 

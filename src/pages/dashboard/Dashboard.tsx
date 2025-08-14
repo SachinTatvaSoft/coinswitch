@@ -11,13 +11,19 @@ import { CURRENCY } from "../../constant/constant";
 import Loader from "../../components/Loader";
 import { formatMarketCap } from "../../lib/utils";
 import type { Coin, GlobalStats } from "../../types";
+import { useDispatch, useSelector } from "react-redux";
+import type { RootState } from "../../store";
+import { toggleWatchlist } from "../../slices/watchlistSlice";
 
 export default function Dashboard() {
   const navigate = useNavigate();
+  const dispatch = useDispatch();
+
+  const watchlistIds = useSelector((state: RootState) => state.watchlist.ids);
 
   const [loading, setLoading] = useState(false);
   const [coins, setCoins] = useState<Coin[]>([]);
-  const [watchlist, setWatchlist] = useState<string[]>([]);
+  const [watchlistCoins, setWatchlistCoins] = useState<Coin[]>([]);
   const [globalStats, setGlobalStats] = useState<GlobalStats>({});
 
   useEffect(() => {
@@ -25,19 +31,49 @@ export default function Dashboard() {
     getGlobalStats();
   }, []);
 
+  useEffect(() => {
+    if (watchlistIds.length > 0) {
+      getWatchlistCoins();
+    } else {
+      setWatchlistCoins([]);
+    }
+  }, [watchlistIds, coins]);
+
+  const getWatchlistCoins = async () => {
+    try {
+      const existingCoinIds = coins.map((coin) => coin.id);
+      const missingIds = watchlistIds.filter(
+        (id) => !existingCoinIds.includes(id)
+      );
+
+      let updatedWatchlist: Coin[] = coins.filter((coin) =>
+        watchlistIds.includes(coin.id)
+      );
+
+      if (missingIds.length > 0) {
+        const idsParam = missingIds.join(",");
+        const response = await apiService.get<Coin[]>(
+          `${API_ROUTE.TOP_COINS}?vs_currency=${CURRENCY}&ids=${idsParam}&order=gecko_desc&sparkline=false&price_change_percentage=24h`
+        );
+
+        if (response.status === 200) {
+          updatedWatchlist = [...updatedWatchlist, ...response.data];
+        }
+      }
+
+      setWatchlistCoins(updatedWatchlist);
+    } catch (error) {
+      console.error("Failed to fetch watchlist coins", error);
+    }
+  };
+
   const handleWatchlistToggle = (coinId: string) => {
-    setWatchlist((prev) =>
-      prev.includes(coinId)
-        ? prev.filter((id) => id !== coinId)
-        : [...prev, coinId]
-    );
+    dispatch(toggleWatchlist(coinId));
   };
 
   const handleCoinClick = (coinId: string) => {
     navigate(`${FE_ROUTE.COIN_DETAILS}/${coinId}`);
   };
-
-  const watchlistCoins = coins.filter((coin) => watchlist.includes(coin.id));
 
   const getTopCoins = async () => {
     setLoading(true);
@@ -147,7 +183,7 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {watchlist.length > 0 && (
+        {watchlistCoins.length > 0 && (
           <WatchlistSection
             watchlistCoins={watchlistCoins}
             onWatchlistToggle={handleWatchlistToggle}
@@ -164,7 +200,7 @@ export default function Dashboard() {
               <CoinCard
                 key={coin.id}
                 coin={coin}
-                isInWatchlist={watchlist.includes(coin.id)}
+                isInWatchlist={watchlistIds.includes(coin.id)}
                 onWatchlistToggle={handleWatchlistToggle}
                 onClick={handleCoinClick}
               />

@@ -7,24 +7,29 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 export const formatCurrency = (
-  amount: number | string,
+  price: number,
   currency: string,
-  locale: string = "en-US",
-  fractionDigits?: number
+  locale: string = "en-US"
 ): string => {
-  const digits =
-    fractionDigits !== undefined
-      ? {
-          minimumFractionDigits: fractionDigits,
-          maximumFractionDigits: fractionDigits,
-        }
-      : { minimumFractionDigits: 2, maximumFractionDigits: 6 };
+  let fractionDigits: number;
+
+  if (price >= 1) {
+    fractionDigits = 2;
+  } else if (price >= 0.01) {
+    fractionDigits = 4;
+  } else {
+    return price.toLocaleString(locale, {
+      minimumFractionDigits: 8,
+      maximumFractionDigits: 12,
+    });
+  }
 
   return new Intl.NumberFormat(locale, {
     style: "currency",
     currency,
-    ...digits,
-  }).format(Number(amount));
+    minimumFractionDigits: fractionDigits,
+    maximumFractionDigits: fractionDigits,
+  }).format(price);
 };
 
 export const formatMarketCap = (
@@ -33,26 +38,13 @@ export const formatMarketCap = (
   locale: string = "en-US"
 ): string => {
   if (marketCap >= 1e12) {
-    return `${formatCurrency(marketCap / 1e12, currency, locale, 2)}T`;
+    return `${formatCurrency(marketCap / 1e12, currency, locale)}T`;
   }
   if (marketCap >= 1e9) {
-    return `${formatCurrency(marketCap / 1e9, currency, locale, 2)}B`;
+    return `${formatCurrency(marketCap / 1e9, currency, locale)}B`;
   }
   if (marketCap >= 1e6) {
-    return `${formatCurrency(marketCap / 1e6, currency, locale, 2)}M`;
+    return `${formatCurrency(marketCap / 1e6, currency, locale)}M`;
   }
-  return formatCurrency(marketCap, currency, locale, 0);
-};
-
-export const formatCryptoPrice = (price: number) => {
-  if (price >= 1) {
-    return formatCurrency(price, CURRENCY, "en-US", 2);
-  } else if (price >= 0.01) {
-    return formatCurrency(price, CURRENCY, "en-US", 4);
-  } else {
-    return price?.toLocaleString("en-US", {
-      minimumFractionDigits: 8,
-      maximumFractionDigits: 12,
-    });
-  }
+  return formatCurrency(marketCap, currency, locale);
 };

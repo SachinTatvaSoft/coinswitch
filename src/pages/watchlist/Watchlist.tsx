@@ -15,104 +15,57 @@ import {
   SelectValue,
 } from "../../components/ui/select";
 import Loader from "../../components/Loader";
-import { FE_ROUTE } from "../../config/app-routes";
+import { FE_ROUTE, API_ROUTE } from "../../config/app-routes";
+import apiService from "../../config/api";
+import { CURRENCY } from "../../constant/constant";
+import { useSelector } from "react-redux";
+import type { RootState } from "../../store";
+import type { Coin } from "../../types";
+import { toggleWatchlist } from "../../slices/watchlistSlice";
+import { useDispatch } from "react-redux";
 
 const Watchlist = () => {
   const navigate = useNavigate();
-  const [coins, setCoins] = useState<any[]>([]);
-  const [watchlist, setWatchlist] = useState<string[]>([
-    "bitcoin",
-    "ethereum",
-    "cardano",
-  ]);
+  const dispatch = useDispatch();
+  const watchlist = useSelector((state: RootState) => state.watchlist.ids);
+
+  const [coins, setCoins] = useState<Coin[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
-  const [sortBy, setSortBy] = useState<"name" | "price" | "change">("name");
+  const [sortBy, setSortBy] = useState<"name" | "change">("name");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
 
-  // Mock crypto data - same as Index page
-  useEffect(() => {
-    const mockCoins = [
-      {
-        id: "bitcoin",
-        name: "Bitcoin",
-        symbol: "BTC",
-        image: "https://assets.coingecko.com/coins/images/1/large/bitcoin.png",
-        current_price: 45234.56,
-        price_change_percentage_24h: 2.45,
-        market_cap: 883940123456,
-        total_volume: 23456789012,
-      },
-      {
-        id: "ethereum",
-        name: "Ethereum",
-        symbol: "ETH",
-        image:
-          "https://assets.coingecko.com/coins/images/279/large/ethereum.png",
-        current_price: 3156.78,
-        price_change_percentage_24h: -1.23,
-        market_cap: 379876543210,
-        total_volume: 15234567890,
-      },
-      {
-        id: "binancecoin",
-        name: "BNB",
-        symbol: "BNB",
-        image:
-          "https://assets.coingecko.com/coins/images/825/large/bnb-icon2_2x.png",
-        current_price: 314.92,
-        price_change_percentage_24h: 0.87,
-        market_cap: 48456789123,
-        total_volume: 987654321,
-      },
-      {
-        id: "cardano",
-        name: "Cardano",
-        symbol: "ADA",
-        image:
-          "https://assets.coingecko.com/coins/images/975/large/cardano.png",
-        current_price: 0.485,
-        price_change_percentage_24h: 3.21,
-        market_cap: 17123456789,
-        total_volume: 456789123,
-      },
-      {
-        id: "solana",
-        name: "Solana",
-        symbol: "SOL",
-        image:
-          "https://assets.coingecko.com/coins/images/4128/large/solana.png",
-        current_price: 98.47,
-        price_change_percentage_24h: -2.15,
-        market_cap: 44987654321,
-        total_volume: 2345678901,
-      },
-      {
-        id: "polkadot",
-        name: "Polkadot",
-        symbol: "DOT",
-        image:
-          "https://assets.coingecko.com/coins/images/12171/large/polkadot.png",
-        current_price: 7.23,
-        price_change_percentage_24h: 1.98,
-        market_cap: 9876543210,
-        total_volume: 234567890,
-      },
-    ];
+  const fetchWatchlistCoins = async () => {
+    setLoading(true);
 
-    // Simulate API loading
-    setTimeout(() => {
-      setCoins(mockCoins);
+    if (watchlist.length === 0) {
+      setCoins([]);
       setLoading(false);
-    }, 800);
-  }, []);
+      return;
+    }
+
+    try {
+      const idsParam = watchlist.join(",");
+      const response = await apiService.get<Coin[]>(
+        `${API_ROUTE.TOP_COINS}?vs_currency=${CURRENCY}&ids=${idsParam}&order=gecko_desc&sparkline=false&price_change_percentage=24h`
+      );
+
+      if (response.status === 200 && response.data) {
+        setCoins(response.data);
+      }
+    } catch (error) {
+      console.error("Failed to fetch watchlist coins", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchWatchlistCoins();
+  }, [watchlist]);
 
   const handleWatchlistToggle = (coinId: string) => {
-    setWatchlist((prev) =>
-      prev.includes(coinId)
-        ? prev.filter((id) => id !== coinId)
-        : [...prev, coinId]
-    );
+    dispatch(toggleWatchlist(coinId));
   };
 
   const handleCoinClick = (coinId: string) => {
@@ -124,46 +77,44 @@ const Watchlist = () => {
   };
 
   const watchlistCoins = coins
-    .filter((coin) => watchlist.includes(coin.id))
-    .filter(
-      (coin) =>
-        coin.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        coin.symbol.toLowerCase().includes(searchQuery.toLowerCase())
-    )
+    .filter((coin) => {
+      if (!searchQuery) return true;
+      const query = searchQuery.toLowerCase();
+      return (
+        coin.name.toLowerCase().includes(query) ||
+        coin.symbol.toLowerCase().includes(query)
+      );
+    })
     .sort((a, b) => {
-      let aValue, bValue;
+      let aValue: string | number = "";
+      let bValue: string | number = "";
 
       switch (sortBy) {
-        case "price":
-          aValue = a.current_price;
-          bValue = b.current_price;
-          break;
         case "change":
-          aValue = a.price_change_percentage_24h;
-          bValue = b.price_change_percentage_24h;
+          aValue = a.price_change_percentage_24h ?? 0;
+          bValue = b.price_change_percentage_24h ?? 0;
           break;
         default:
-          aValue = a.name;
-          bValue = b.name;
+          aValue = a.name ?? "";
+          bValue = b.name ?? "";
       }
 
       if (typeof aValue === "string") {
         return sortOrder === "asc"
-          ? aValue.localeCompare(bValue)
-          : bValue.localeCompare(aValue);
+          ? aValue.localeCompare(bValue as string)
+          : (bValue as string).localeCompare(aValue);
       }
 
-      return sortOrder === "asc" ? aValue - bValue : bValue - aValue;
+      return sortOrder === "asc"
+        ? (aValue as number) - (bValue as number)
+        : (bValue as number) - (aValue as number);
     });
 
-  if (loading) {
-    return <Loader />;
-  }
+  if (loading) return <Loader />;
 
   return (
     <div className="min-h-screen flex flex-col">
       <Header />
-
       <main className="flex-1 container px-4 py-8 space-y-8 max-w-[1440px] mx-auto">
         <div className="space-y-4">
           <div className="flex items-center space-x-3">
@@ -171,7 +122,7 @@ const Watchlist = () => {
               <Star className="h-5 w-5 text-primary-foreground fill-primary-foreground" />
             </div>
             <div>
-              <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-foreground">
+              <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-foreground">
                 My Watchlist ({watchlistCoins.length})
               </h1>
               <p className="text-muted-foreground">
@@ -181,52 +132,49 @@ const Watchlist = () => {
           </div>
         </div>
 
-        {watchlistCoins.length > 0 && (
-          <Card className="p-4 bg-card/50 backdrop-blur-sm border-border/50">
-            <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
-              <div className="relative flex-1 max-w-md">
-                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                <Input
-                  type="search"
-                  placeholder="Search your watchlist..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-10 bg-background/50 border-border/50"
-                />
-              </div>
-
-              <div className="flex items-center space-x-2">
-                <Select
-                  value={sortBy}
-                  onValueChange={(value) => setSortBy(value as typeof sortBy)}
-                >
-                  <SelectTrigger className="w-[140px] bg-background/50 border-border/50">
-                    <Filter className="h-4 w-4 mr-2" />
-                    <SelectValue placeholder="Sort by" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="name">Name</SelectItem>
-                    <SelectItem value="price">Price</SelectItem>
-                    <SelectItem value="change">24h Change</SelectItem>
-                  </SelectContent>
-                </Select>
-
-                <Button
-                  variant="outline"
-                  size="icon"
-                  onClick={toggleSortOrder}
-                  className="bg-background/50 border-border/50"
-                >
-                  {sortOrder === "asc" ? (
-                    <SortAsc className="h-4 w-4" />
-                  ) : (
-                    <SortDesc className="h-4 w-4" />
-                  )}
-                </Button>
-              </div>
+        <Card className="p-4 bg-card/50 backdrop-blur-sm border-border/50">
+          <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
+            <div className="relative flex-1 max-w-md">
+              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                type="search"
+                placeholder="Search your watchlist..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-10 bg-background/50 border-border/50"
+              />
             </div>
-          </Card>
-        )}
+
+            <div className="flex items-center space-x-2">
+              <Select
+                value={sortBy}
+                onValueChange={(value) => setSortBy(value as typeof sortBy)}
+              >
+                <SelectTrigger className="w-[140px] bg-background/50 border-border/50">
+                  <Filter className="h-4 w-4 mr-2" />
+                  <SelectValue placeholder="Sort by" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="name">Name</SelectItem>
+                  <SelectItem value="change">24h Change</SelectItem>
+                </SelectContent>
+              </Select>
+
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={toggleSortOrder}
+                className="bg-background/50 border-border/50"
+              >
+                {sortOrder === "asc" ? (
+                  <SortAsc className="h-4 w-4" />
+                ) : (
+                  <SortDesc className="h-4 w-4" />
+                )}
+              </Button>
+            </div>
+          </div>
+        </Card>
 
         {watchlistCoins.length === 0 ? (
           <Card className="p-12 text-center bg-card/50 backdrop-blur-sm border-border/50">
@@ -245,7 +193,7 @@ const Watchlist = () => {
                 </p>
               </div>
               <Button
-                onClick={() => navigate(FE_ROUTE.HOME)}
+                onClick={() => navigate(FE_ROUTE.DASHBOARD)}
                 className="gradient-primary text-primary-foreground hover:opacity-90"
               >
                 Explore Markets
@@ -291,7 +239,6 @@ const Watchlist = () => {
           </div>
         )}
       </main>
-
       <Footer />
     </div>
   );

@@ -14,7 +14,7 @@ import { API_ROUTE } from "../config/app-routes";
 import apiService from "../config/api";
 import { CURRENCY, timeframeButtons } from "../constant/constant";
 import Loader from "./Loader";
-import { formatCryptoPrice } from "../lib/utils";
+import { formatCurrency } from "../lib/utils";
 import type { ChartPoint, CoinChartProps, MarketChartResponse } from "../types";
 
 const CoinChart = ({ coinName, coinId }: CoinChartProps) => {
@@ -85,7 +85,6 @@ const CoinChart = ({ coinName, coinId }: CoinChartProps) => {
   };
 
   const currentPrice = chartData[chartData.length - 1]?.price || 0;
-  console.log(currentPrice);
   const previousPrice = chartData[0]?.price || 0;
   const priceChange = currentPrice - previousPrice;
   const priceChangePercent = previousPrice
@@ -113,7 +112,7 @@ const CoinChart = ({ coinName, coinId }: CoinChartProps) => {
             </h3>
             <div className="flex items-center space-x-4 mt-2">
               <span className="text-2xl font-bold text-foreground">
-                {formatCryptoPrice(currentPrice)}
+                {formatCurrency(currentPrice, CURRENCY)}
               </span>
               <span
                 className={`text-sm font-medium ${
@@ -121,7 +120,7 @@ const CoinChart = ({ coinName, coinId }: CoinChartProps) => {
                 }`}
               >
                 {isPositive ? "+" : ""}
-                {formatCryptoPrice(priceChange)} ({isPositive ? "+" : ""}
+                {formatCurrency(priceChange, CURRENCY)} ({isPositive ? "+" : ""}
                 {priceChangePercent.toFixed(2)}%)
               </span>
             </div>
@@ -133,7 +132,7 @@ const CoinChart = ({ coinName, coinId }: CoinChartProps) => {
                 key={btn.key}
                 variant={timeframe === btn.value ? "default" : "ghost"}
                 size="sm"
-                className={`text-xs font-medium ${
+                className={`flex-1 text-xs font-medium mx-1 ${
                   timeframe === btn.value
                     ? "bg-primary text-primary-foreground shadow-sm"
                     : "text-muted-foreground hover:text-foreground"
@@ -172,7 +171,7 @@ const CoinChart = ({ coinName, coinId }: CoinChartProps) => {
                 fontSize={12}
                 tickLine={false}
                 axisLine={false}
-                tickFormatter={(value) => formatCryptoPrice(value)}
+                tickFormatter={(value) => formatCurrency(value, CURRENCY)}
                 domain={[
                   (dataMin: number) => dataMin * 0.995,
                   (dataMax: number) => dataMax * 1.005,
@@ -183,7 +182,7 @@ const CoinChart = ({ coinName, coinId }: CoinChartProps) => {
                   formatTooltipLabel(new Date(ts).toISOString())
                 }
                 formatter={(value: number) => [
-                  formatCryptoPrice(value),
+                  formatCurrency(value, CURRENCY),
                   "Price",
                 ]}
                 contentStyle={{

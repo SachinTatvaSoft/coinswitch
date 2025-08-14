@@ -2,8 +2,9 @@ import { useState } from "react";
 import { TrendingUp, TrendingDown, Bookmark } from "lucide-react";
 import { Card } from "./ui/card";
 import { Button } from "./ui/button";
-import { formatCryptoPrice, formatMarketCap } from "../lib/utils";
+import { formatCurrency, formatMarketCap } from "../lib/utils";
 import type { CoinCardProps } from "../types";
+import { CURRENCY } from "../constant/constant";
 
 const CoinCard = ({
   coin,
@@ -36,9 +37,7 @@ const CoinCard = ({
       onClick={handleCardClick}
     >
       <div
-        className={`cursor-pointer absolute bottom-3 right-3 transform transition-all duration-500 ease-in-out ${
-          isHovered ? "opacity-100 translate-y-0" : "opacity-0 translate-y-3"
-        }`}
+        className={`cursor-pointer absolute bottom-3 right-3 transform transition-all duration-500 ease-in-out`}
       >
         <Button
           size="icon"
@@ -73,7 +72,7 @@ const CoinCard = ({
 
         <div className="text-right">
           <p className="font-bold text-lg sm:text-xl text-foreground">
-            {formatCryptoPrice(coin.current_price)}
+            {formatCurrency(coin.current_price, CURRENCY)}
           </p>
           <div
             className={`flex items-center space-x-1 text-sm sm:text-base ${

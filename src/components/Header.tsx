@@ -89,76 +89,80 @@ const Header = () => {
           </span>
         </Link>
 
-        <nav className="hidden md:flex items-center space-x-6">
-          <Link
-            to={FE_ROUTE.DASHBOARD}
-            className={`text-sm font-medium transition-colors hover:text-primary ${
-              isActive(FE_ROUTE.DASHBOARD) ? "text-primary" : "text-foreground"
-            }`}
-          >
-            Markets
-          </Link>
-          <Link
-            to={FE_ROUTE.WATCHLIST}
-            className={`text-sm font-medium transition-colors hover:text-primary ${
-              isActive(FE_ROUTE.WATCHLIST) ? "text-primary" : "text-foreground"
-            }`}
-          >
-            Watchlist
-          </Link>
-        </nav>
+        <div className="hidden sm:block relative">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              type="search"
+              placeholder="Search coins..."
+              value={searchTerm}
+              onChange={handleSearchChange}
+              className="w-md pl-10 bg-muted/50 border border-border/50 focus:border-primary rounded-xl shadow-inner"
+            />
+          </div>
+
+          {isPopoverOpen && (
+            <div className="absolute mt-4 w-md max-w-full max-h-72 p-0 rounded-xl shadow-xl border border-border/50 bg-background/95 backdrop-blur z-50">
+              {loading ? (
+                <div className="p-4 flex justify-center items-center">
+                  <Loader />
+                </div>
+              ) : results.length > 0 ? (
+                <ul className="max-h-72 overflow-y-auto">
+                  {results.map((coin) => (
+                    <li
+                      key={coin.id}
+                      className="flex items-center gap-3 px-4 py-2 hover:bg-muted/60 transition-colors cursor-pointer"
+                      onClick={() => handleSelectCoin(coin.id)}
+                    >
+                      <img
+                        src={coin.thumb}
+                        alt={coin.name}
+                        className="w-6 h-6 rounded-full"
+                      />
+                      <div className="flex flex-col">
+                        <span className="text-sm font-semibold">
+                          {coin.name}
+                        </span>
+                        <span className="text-xs text-muted-foreground">
+                          {coin.symbol.toUpperCase()}
+                        </span>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              ) : searchTerm.trim().length > 0 ? (
+                <p className="p-4 text-sm text-muted-foreground text-center">
+                  No results found
+                </p>
+              ) : null}
+            </div>
+          )}
+        </div>
 
         <div className="flex items-center space-x-3">
-          <div className="hidden sm:block relative">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                type="search"
-                placeholder="Search coins..."
-                value={searchTerm}
-                onChange={handleSearchChange}
-                className="w-md pl-10 bg-muted/50 border border-border/50 focus:border-primary rounded-xl shadow-inner"
-              />
-            </div>
-
-            {isPopoverOpen && (
-              <div className="absolute mt-4 w-md max-w-full max-h-72 p-0 rounded-xl shadow-xl border border-border/50 bg-background/95 backdrop-blur z-50">
-                {loading ? (
-                  <div className="p-4 flex justify-center items-center">
-                    <Loader />
-                  </div>
-                ) : results.length > 0 ? (
-                  <ul className="max-h-72 overflow-y-auto">
-                    {results.map((coin) => (
-                      <li
-                        key={coin.id}
-                        className="flex items-center gap-3 px-4 py-2 hover:bg-muted/60 transition-colors cursor-pointer"
-                        onClick={() => handleSelectCoin(coin.id)}
-                      >
-                        <img
-                          src={coin.thumb}
-                          alt={coin.name}
-                          className="w-6 h-6 rounded-full"
-                        />
-                        <div className="flex flex-col">
-                          <span className="text-sm font-semibold">
-                            {coin.name}
-                          </span>
-                          <span className="text-xs text-muted-foreground">
-                            {coin.symbol.toUpperCase()}
-                          </span>
-                        </div>
-                      </li>
-                    ))}
-                  </ul>
-                ) : searchTerm.trim().length > 0 ? (
-                  <p className="p-4 text-sm text-muted-foreground text-center">
-                    No results found
-                  </p>
-                ) : null}
-              </div>
-            )}
-          </div>
+          <nav className="hidden md:flex items-center space-x-6">
+            <Link
+              to={FE_ROUTE.DASHBOARD}
+              className={`text-sm font-medium transition-colors hover:text-primary ${
+                isActive(FE_ROUTE.DASHBOARD)
+                  ? "text-primary"
+                  : "text-foreground"
+              }`}
+            >
+              Markets
+            </Link>
+            <Link
+              to={FE_ROUTE.WATCHLIST}
+              className={`text-sm font-medium transition-colors hover:text-primary ${
+                isActive(FE_ROUTE.WATCHLIST)
+                  ? "text-primary"
+                  : "text-foreground"
+              }`}
+            >
+              Watchlist
+            </Link>
+          </nav>
 
           <Button variant="ghost" size="icon" onClick={handleLogout}>
             <LogOut className="h-5 w-5" />

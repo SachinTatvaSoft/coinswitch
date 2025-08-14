@@ -80,3 +80,7 @@ export interface CoinSearchResult {
   thumb: string;
   large: string;
 }
+
+export interface WatchlistState {
+  ids: string[];
+}

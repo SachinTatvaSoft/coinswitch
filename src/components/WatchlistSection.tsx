@@ -1,13 +1,22 @@
 import { Star } from "lucide-react";
 import { Card } from "./ui/card";
+import { Button } from "./ui/button";
 import CoinCard from "./CoinCard";
 import type { WatchlistSectionProps } from "../types";
+import { FE_ROUTE } from "../config/app-routes";
+import { useNavigate } from "react-router-dom";
 
 const WatchlistSection = ({
   watchlistCoins,
   onWatchlistToggle,
   onCoinClick,
 }: WatchlistSectionProps) => {
+  const navigate = useNavigate();
+
+  const handleNavigation = () => {
+    navigate(FE_ROUTE.WATCHLIST);
+  };
+
   if (watchlistCoins.length === 0) {
     return (
       <Card className="p-8 text-center bg-card/50 backdrop-blur-sm border-border/50">
@@ -29,18 +38,28 @@ const WatchlistSection = ({
     );
   }
 
+  const coinsToShow = watchlistCoins.slice(0, 3);
+
   return (
     <div className="space-y-4">
-      <div className="flex items-center space-x-2">
-        <Star className="h-5 w-5 text-accent fill-accent" />
-        <h2 className="text-xl font-bold text-foreground">Your Watchlist</h2>
-        <span className="text-sm text-muted-foreground">
-          ({watchlistCoins.length} coins)
-        </span>
+      <div className="flex items-center justify-between">
+        <div className="flex items-center space-x-2">
+          <Star className="h-5 w-5 text-accent fill-accent" />
+          <h2 className="text-xl font-bold text-foreground">Your Watchlist</h2>
+          <span className="text-sm text-muted-foreground">
+            ({watchlistCoins.length} coins)
+          </span>
+        </div>
+
+        {watchlistCoins.length > 3 && (
+          <Button variant="outline" size="sm" onClick={handleNavigation}>
+            View All
+          </Button>
+        )}
       </div>
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        {watchlistCoins.map((coin) => (
+        {coinsToShow.map((coin) => (
           <CoinCard
             key={coin.id}
             coin={coin}
