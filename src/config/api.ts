@@ -1,10 +1,11 @@
 import axios, { type AxiosRequestConfig } from "axios";
+import { API_KEY, API_BASE_URL } from "../constant/constant";
 
 const api = axios.create({
-  baseURL: process.env.BASE_URL,
+  baseURL: API_BASE_URL,
   headers: {
     "Content-Type": "application/json",
-    "x-cg-demo-api-key": process.env.API_KEY,
+    "x-cg-demo-api-key": API_KEY,
   },
 });
 

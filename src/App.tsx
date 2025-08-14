@@ -5,12 +5,13 @@ import ProtectedRoute from "./routes/ProtectedRoute";
 import PublicRoute from "./routes/PublicRoute";
 import CoinDetail from "./pages/details/CoinDetails";
 import Watchlist from "./pages/watchlist/Watchlist";
+import { FE_ROUTE } from "./config/app-routes";
 
 export default function App() {
   return (
     <Routes>
       <Route
-        path="/"
+        path={FE_ROUTE.HOME}
         element={
           <PublicRoute>
             <Login />
@@ -18,7 +19,7 @@ export default function App() {
         }
       />
       <Route
-        path="/dashboard"
+        path={FE_ROUTE.DASHBOARD}
         element={
           <ProtectedRoute>
             <Dashboard />
@@ -26,7 +27,7 @@ export default function App() {
         }
       />
       <Route
-        path="/watchlist"
+        path={FE_ROUTE.WATCHLIST}
         element={
           <ProtectedRoute>
             <Watchlist />
@@ -34,7 +35,7 @@ export default function App() {
         }
       />
       <Route
-        path="/coin/:coinId"
+        path={`${FE_ROUTE.COIN_DETAILS}/:coinId`}
         element={
           <ProtectedRoute>
             <CoinDetail />

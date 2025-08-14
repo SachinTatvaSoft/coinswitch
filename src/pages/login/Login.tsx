@@ -15,9 +15,8 @@ import { Images } from "../../assets/assets";
 import { useDispatch } from "react-redux";
 import type { AppDispatch } from "../../store";
 import { login } from "../../slices/authSlice";
-
-const VALID_EMAIL = "user@yopmail.com";
-const VALID_PASSWORD = "Password@123";
+import { FE_ROUTE } from "../../config/app-routes";
+import { VALID_EMAIL, VALID_PASSWORD } from "../../constant/constant";
 
 const Login = () => {
   const dispatch = useDispatch<AppDispatch>();
@@ -67,7 +66,7 @@ const Login = () => {
     setError("");
     if (error.length === 0) {
       dispatch(login());
-      navigate("/dashboard");
+      navigate(FE_ROUTE.DASHBOARD);
     }
   };
 
@@ -192,16 +191,6 @@ const Login = () => {
                       </button>
                     </div>
                     {error && <p className="text-red-500 text-sm">{error}</p>}
-                  </div>
-
-                  <div className="flex items-center justify-between text-sm mt-2">
-                    <label className="flex items-center space-x-2">
-                      <input
-                        type="checkbox"
-                        className="rounded border-border/50"
-                      />
-                      <span className="text-muted-foreground">Remember me</span>
-                    </label>
                   </div>
 
                   <Button type="submit" size="lg" className="w-full mt-6">

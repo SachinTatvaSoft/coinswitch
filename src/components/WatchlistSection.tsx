@@ -1,12 +1,7 @@
 import { Star } from "lucide-react";
 import { Card } from "./ui/card";
 import CoinCard from "./CoinCard";
-
-interface WatchlistSectionProps {
-  watchlistCoins: any[];
-  onWatchlistToggle: (coinId: string) => void;
-  onCoinClick: (coinId: string) => void;
-}
+import type { WatchlistSectionProps } from "../types";
 
 const WatchlistSection = ({
   watchlistCoins,

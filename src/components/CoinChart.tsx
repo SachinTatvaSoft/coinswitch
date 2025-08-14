@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
   LineChart,
   Line,
@@ -10,44 +10,55 @@ import {
 } from "recharts";
 import { Button } from "./ui/button";
 import { Card } from "./ui/card";
+import { API_ROUTE } from "../config/app-routes";
+import apiService from "../config/api";
+import { CURRENCY, timeframeButtons } from "../constant/constant";
+import Loader from "./Loader";
+import { formatCryptoPrice } from "../lib/utils";
+import type { ChartPoint, CoinChartProps, MarketChartResponse } from "../types";
 
-interface CoinChartProps {
-  coinName: string;
-}
+const CoinChart = ({ coinName, coinId }: CoinChartProps) => {
+  const [timeframe, setTimeframe] = useState<number>(1);
+  const [loading, setLoading] = useState(true);
+  const [chartData, setChartData] = useState<ChartPoint[]>([]);
 
-const CoinChart = ({ coinName }: CoinChartProps) => {
-  const [timeframe, setTimeframe] = useState<"1d" | "7d" | "30d">("7d");
+  const getHistoricalData = useCallback(async () => {
+    setLoading(true);
+    try {
+      const response = await apiService.get<MarketChartResponse>(
+        `${API_ROUTE.COIN_DETAILS}/${coinId}/market_chart?vs_currency=${CURRENCY}&days=${timeframe}`
+      );
 
-  const generateMockData = (days: number) => {
-    const data = [];
-    const basePrice = 50000;
-
-    for (let i = 0; i < days; i++) {
-      const date = new Date();
-      date.setDate(date.getDate() - (days - i));
-
-      data.push({
-        date: date.toISOString().split("T")[0],
-        price: basePrice + (Math.random() - 0.5) * 10000,
-        timestamp: date.getTime(),
-      });
+      if (response.status === 200 && response.data?.prices) {
+        const formattedData: ChartPoint[] = response.data.prices.map(
+          ([timestamp, price]) => {
+            const dateObj = new Date(timestamp);
+            return {
+              date: dateObj.toISOString().split("T")[0],
+              price,
+              timestamp,
+            };
+          }
+        );
+        setChartData(formattedData);
+      } else {
+        setChartData([]);
+      }
+    } catch (error) {
+      console.error("Failed to fetch historical data", error);
+      setChartData([]);
+    } finally {
+      setLoading(false);
     }
-    return data;
-  };
+  }, [coinId, timeframe]);
 
-  const chartData = generateMockData(
-    timeframe === "1d" ? 24 : timeframe === "7d" ? 7 : 30
-  );
-
-  const timeframeButtons = [
-    { key: "1d" as const, label: "1D" },
-    { key: "7d" as const, label: "7D" },
-    { key: "30d" as const, label: "30D" },
-  ];
+  useEffect(() => {
+    getHistoricalData();
+  }, [coinId, timeframe, getHistoricalData]);
 
   const formatXAxisLabel = (tickItem: string) => {
     const date = new Date(tickItem);
-    if (timeframe === "1d") {
+    if (timeframe === 1) {
       return date.toLocaleTimeString("en-US", {
         hour: "2-digit",
         minute: "2-digit",
@@ -58,7 +69,7 @@ const CoinChart = ({ coinName }: CoinChartProps) => {
 
   const formatTooltipLabel = (label: string) => {
     const date = new Date(label);
-    if (timeframe === "1d") {
+    if (timeframe === 1) {
       return date.toLocaleString("en-US", {
         month: "short",
         day: "numeric",
@@ -74,13 +85,26 @@ const CoinChart = ({ coinName }: CoinChartProps) => {
   };
 
   const currentPrice = chartData[chartData.length - 1]?.price || 0;
+  console.log(currentPrice);
   const previousPrice = chartData[0]?.price || 0;
   const priceChange = currentPrice - previousPrice;
-  const priceChangePercent = (priceChange / previousPrice) * 100;
+  const priceChangePercent = previousPrice
+    ? (priceChange / previousPrice) * 100
+    : 0;
   const isPositive = priceChange >= 0;
 
+  const isSmallChange = Math.abs(priceChangePercent) < 1;
+
+  if (loading) {
+    return <Loader />;
+  }
+
   return (
-    <Card className="p-6 bg-card/50 backdrop-blur-sm border-border/50">
+    <Card
+      className={`p-6 backdrop-blur-sm border-border/50 ${
+        isSmallChange ? "bg-card/30" : "bg-card/50"
+      }`}
+    >
       <div className="flex flex-col space-y-6">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0">
           <div>
@@ -89,23 +113,15 @@ const CoinChart = ({ coinName }: CoinChartProps) => {
             </h3>
             <div className="flex items-center space-x-4 mt-2">
               <span className="text-2xl font-bold text-foreground">
-                $
-                {currentPrice.toLocaleString(undefined, {
-                  minimumFractionDigits: 2,
-                  maximumFractionDigits: 2,
-                })}
+                {formatCryptoPrice(currentPrice)}
               </span>
               <span
                 className={`text-sm font-medium ${
                   isPositive ? "text-success" : "text-destructive"
                 }`}
               >
-                {isPositive ? "+" : ""}$
-                {priceChange.toLocaleString(undefined, {
-                  minimumFractionDigits: 2,
-                  maximumFractionDigits: 2,
-                })}
-                ({isPositive ? "+" : ""}
+                {isPositive ? "+" : ""}
+                {formatCryptoPrice(priceChange)} ({isPositive ? "+" : ""}
                 {priceChangePercent.toFixed(2)}%)
               </span>
             </div>
@@ -115,14 +131,14 @@ const CoinChart = ({ coinName }: CoinChartProps) => {
             {timeframeButtons.map((btn) => (
               <Button
                 key={btn.key}
-                variant={timeframe === btn.key ? "default" : "ghost"}
+                variant={timeframe === btn.value ? "default" : "ghost"}
                 size="sm"
                 className={`text-xs font-medium ${
-                  timeframe === btn.key
+                  timeframe === btn.value
                     ? "bg-primary text-primary-foreground shadow-sm"
                     : "text-muted-foreground hover:text-foreground"
                 }`}
-                onClick={() => setTimeframe(btn.key)}
+                onClick={() => setTimeframe(btn.value)}
               >
                 {btn.label}
               </Button>
@@ -138,53 +154,54 @@ const CoinChart = ({ coinName }: CoinChartProps) => {
             >
               <CartesianGrid
                 strokeDasharray="3 3"
-                stroke="hsl(var(--border))"
+                stroke="#232528"
                 opacity={0.3}
               />
               <XAxis
-                dataKey="date"
-                tickFormatter={formatXAxisLabel}
-                stroke="hsl(var(--muted-foreground))"
+                dataKey="timestamp"
+                tickFormatter={(ts) =>
+                  formatXAxisLabel(new Date(ts).toISOString())
+                }
+                stroke="#9ea9b8"
                 fontSize={12}
                 tickLine={false}
                 axisLine={false}
               />
               <YAxis
-                stroke="hsl(var(--muted-foreground))"
+                stroke="#9ea9b8"
                 fontSize={12}
                 tickLine={false}
                 axisLine={false}
-                tickFormatter={(value: any) => `$${value.toLocaleString()}`}
+                tickFormatter={(value) => formatCryptoPrice(value)}
+                domain={[
+                  (dataMin: number) => dataMin * 0.995,
+                  (dataMax: number) => dataMax * 1.005,
+                ]}
               />
               <Tooltip
-                labelFormatter={formatTooltipLabel}
+                labelFormatter={(ts) =>
+                  formatTooltipLabel(new Date(ts).toISOString())
+                }
                 formatter={(value: number) => [
-                  `$${value.toLocaleString(undefined, {
-                    minimumFractionDigits: 2,
-                    maximumFractionDigits: 2,
-                  })}`,
+                  formatCryptoPrice(value),
                   "Price",
                 ]}
                 contentStyle={{
-                  backgroundColor: "hsl(var(--card))",
-                  border: "1px solid hsl(var(--border))",
+                  backgroundColor: "#121314",
+                  border: "1px solid #232528",
                   borderRadius: "8px",
-                  color: "hsl(var(--foreground))",
+                  color: "#fafdff",
                 }}
               />
               <Line
                 type="monotone"
                 dataKey="price"
-                stroke={
-                  isPositive ? "hsl(var(--success))" : "hsl(var(--destructive))"
-                }
+                stroke={isPositive ? "#099268" : "#e03131"}
                 strokeWidth={2}
                 dot={false}
                 activeDot={{
                   r: 4,
-                  fill: isPositive
-                    ? "hsl(var(--success))"
-                    : "hsl(var(--destructive))",
+                  fill: isPositive ? "#099268" : "#e03131",
                   strokeWidth: 0,
                 }}
               />

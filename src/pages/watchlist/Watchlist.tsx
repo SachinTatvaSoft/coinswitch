@@ -1,13 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import {
-  Star,
-  TrendingUp,
-  Search,
-  SortAsc,
-  SortDesc,
-  Filter,
-} from "lucide-react";
+import { Star, Search, SortAsc, SortDesc, Filter } from "lucide-react";
 import Header from "../../components/Header";
 import Footer from "../../components/Footer";
 import CoinCard from "../../components/CoinCard";
@@ -21,6 +14,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "../../components/ui/select";
+import Loader from "../../components/Loader";
+import { FE_ROUTE } from "../../config/app-routes";
 
 const Watchlist = () => {
   const navigate = useNavigate();
@@ -121,7 +116,7 @@ const Watchlist = () => {
   };
 
   const handleCoinClick = (coinId: string) => {
-    navigate(`/coin/${coinId}`);
+    navigate(`${FE_ROUTE.COIN_DETAILS}/${coinId}`);
   };
 
   const toggleSortOrder = () => {
@@ -161,35 +156,8 @@ const Watchlist = () => {
       return sortOrder === "asc" ? aValue - bValue : bValue - aValue;
     });
 
-  const watchlistStats = {
-    totalValue: watchlistCoins.reduce(
-      (sum, coin) => sum + coin.current_price,
-      0
-    ),
-    totalChange:
-      watchlistCoins.length > 0
-        ? watchlistCoins.reduce(
-            (sum, coin) => sum + coin.price_change_percentage_24h,
-            0
-          ) / watchlistCoins.length
-        : 0,
-    gainers: watchlistCoins.filter(
-      (coin) => coin.price_change_percentage_24h > 0
-    ).length,
-    losers: watchlistCoins.filter(
-      (coin) => coin.price_change_percentage_24h < 0
-    ).length,
-  };
-
   if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center space-y-4">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
-          <p className="text-muted-foreground">Loading your watchlist...</p>
-        </div>
-      </div>
-    );
+    return <Loader />;
   }
 
   return (
@@ -203,8 +171,8 @@ const Watchlist = () => {
               <Star className="h-5 w-5 text-primary-foreground fill-primary-foreground" />
             </div>
             <div>
-              <h1 className="text-3xl font-bold text-foreground">
-                My Watchlist
+              <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-foreground">
+                My Watchlist ({watchlistCoins.length})
               </h1>
               <p className="text-muted-foreground">
                 Track your favorite cryptocurrencies in one place
@@ -212,65 +180,6 @@ const Watchlist = () => {
             </div>
           </div>
         </div>
-
-        {watchlistCoins.length > 0 && (
-          <div className="grid gap-4 md:grid-cols-4">
-            <Card className="p-4 bg-card/50 backdrop-blur-sm border-border/50">
-              <div className="flex items-center space-x-2">
-                <Star className="h-4 w-4 text-accent" />
-                <span className="text-sm font-medium text-muted-foreground">
-                  Total Coins
-                </span>
-              </div>
-              <p className="text-2xl font-bold text-foreground mt-1">
-                {watchlistCoins.length}
-              </p>
-            </Card>
-
-            <Card className="p-4 bg-card/50 backdrop-blur-sm border-border/50">
-              <div className="flex items-center space-x-2">
-                <TrendingUp className="h-4 w-4 text-primary" />
-                <span className="text-sm font-medium text-muted-foreground">
-                  Avg. Change
-                </span>
-              </div>
-              <p
-                className={`text-2xl font-bold mt-1 ${
-                  watchlistStats.totalChange >= 0
-                    ? "text-success"
-                    : "text-destructive"
-                }`}
-              >
-                {watchlistStats.totalChange >= 0 ? "+" : ""}
-                {watchlistStats.totalChange.toFixed(2)}%
-              </p>
-            </Card>
-
-            <Card className="p-4 bg-card/50 backdrop-blur-sm border-border/50">
-              <div className="flex items-center space-x-2">
-                <div className="h-4 w-4 rounded bg-success"></div>
-                <span className="text-sm font-medium text-muted-foreground">
-                  Gainers
-                </span>
-              </div>
-              <p className="text-2xl font-bold text-foreground mt-1">
-                {watchlistStats.gainers}
-              </p>
-            </Card>
-
-            <Card className="p-4 bg-card/50 backdrop-blur-sm border-border/50">
-              <div className="flex items-center space-x-2">
-                <div className="h-4 w-4 rounded bg-destructive"></div>
-                <span className="text-sm font-medium text-muted-foreground">
-                  Losers
-                </span>
-              </div>
-              <p className="text-2xl font-bold text-foreground mt-1">
-                {watchlistStats.losers}
-              </p>
-            </Card>
-          </div>
-        )}
 
         {watchlistCoins.length > 0 && (
           <Card className="p-4 bg-card/50 backdrop-blur-sm border-border/50">
@@ -336,7 +245,7 @@ const Watchlist = () => {
                 </p>
               </div>
               <Button
-                onClick={() => navigate("/")}
+                onClick={() => navigate(FE_ROUTE.HOME)}
                 className="gradient-primary text-primary-foreground hover:opacity-90"
               >
                 Explore Markets
@@ -346,7 +255,7 @@ const Watchlist = () => {
         ) : (
           <div className="space-y-6">
             <div className="flex items-center justify-between">
-              <h2 className="text-xl font-semibold text-foreground">
+              <h2 className="text-lg sm:text-xl md:text-2xl font-semibold text-foreground">
                 {searchQuery
                   ? `Search Results (${watchlistCoins.length})`
                   : `All Coins (${watchlistCoins.length})`}
@@ -368,12 +277,13 @@ const Watchlist = () => {
             {searchQuery && watchlistCoins.length === 0 && (
               <Card className="p-8 text-center bg-card/50 backdrop-blur-sm border-border/50">
                 <div className="space-y-2">
-                  <h3 className="text-lg font-semibold text-foreground">
-                    No Results Found
+                  <h3 className="text-lg sm:text-xl md:text-2xl font-semibold text-foreground">
+                    Your Watchlist is Empty
                   </h3>
-                  <p className="text-muted-foreground">
-                    No coins in your watchlist match "{searchQuery}". Try a
-                    different search term.
+                  <p className="text-sm sm:text-base text-muted-foreground max-w-md">
+                    Start building your watchlist by visiting the markets page
+                    and clicking the star icon on any cryptocurrency you want to
+                    track.
                   </p>
                 </div>
               </Card>

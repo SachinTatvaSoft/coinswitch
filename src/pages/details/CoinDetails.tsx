@@ -2,105 +2,87 @@ import { useParams, useNavigate } from "react-router-dom";
 import { ArrowLeft, Star, TrendingUp, TrendingDown } from "lucide-react";
 import { Button } from "../../components/ui/button";
 import { Card } from "../../components/ui/card";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import CoinChart from "../../components/CoinChart";
 import Header from "../../components/Header";
 import Footer from "../../components/Footer";
+import Loader from "../../components/Loader";
+import { API_ROUTE, FE_ROUTE } from "../../config/app-routes";
+import apiService from "../../config/api";
+import { formatCryptoPrice, formatMarketCap } from "../../lib/utils";
+import { CURRENCY } from "../../constant/constant";
+import type { CoinData } from "../../types";
 
 const CoinDetail = () => {
-  const { coinId } = useParams();
+  const { coinId } = useParams<{ coinId: string }>();
   const navigate = useNavigate();
-  const [coin, setCoin] = useState<any>(null);
+  const [coin, setCoin] = useState<CoinData | null>(null);
   const [isInWatchlist, setIsInWatchlist] = useState(false);
+  const [loading, setLoading] = useState(true);
+
+  const getCoinDetails = useCallback(async () => {
+    setLoading(true);
+    try {
+      const response = await apiService.get<{
+        id: string;
+        name: string;
+        symbol: string;
+        image?: { large?: string; thumb?: string };
+        market_data?: {
+          current_price?: { [key: string]: any };
+          price_change_percentage_24h?: number;
+          market_cap?: { [key: string]: any };
+          total_volume?: { [key: string]: any };
+          circulating_supply?: number;
+          total_supply?: number | null;
+          max_supply?: number | null;
+          high_24h?: { [key: string]: any };
+          low_24h?: { [key: string]: any };
+        };
+      }>(`${API_ROUTE.COIN_DETAILS}/${coinId}`);
+
+      if (Object.keys(response.data).length > 0 && response.status === 200) {
+        const data = response.data;
+
+        const parsedCoin: CoinData = {
+          id: data.id,
+          name: data.name,
+          symbol: data.symbol.toUpperCase(),
+          image: data.image?.large || data.image?.thumb || "",
+          current_price: data.market_data?.current_price?.[CURRENCY] ?? 0,
+          price_change_percentage_24h:
+            data.market_data?.price_change_percentage_24h ?? 0,
+          market_cap: data.market_data?.market_cap?.[CURRENCY] ?? 0,
+          total_volume: data.market_data?.total_volume?.[CURRENCY] ?? 0,
+          circulating_supply: data.market_data?.circulating_supply ?? 0,
+          total_supply: data.market_data?.total_supply ?? null,
+          max_supply: data.market_data?.max_supply ?? null,
+          high_24h: data.market_data?.high_24h?.[CURRENCY] ?? 0,
+          low_24h: data.market_data?.low_24h?.[CURRENCY] ?? 0,
+        };
+
+        setCoin(parsedCoin);
+      }
+    } catch (error) {
+      console.error("Failed to fetch top coins", error);
+    } finally {
+      setLoading(false);
+    }
+  }, [coinId]);
 
   useEffect(() => {
-    const mockCoin = {
-      id: coinId,
-      name:
-        coinId === "bitcoin"
-          ? "Bitcoin"
-          : coinId === "ethereum"
-          ? "Ethereum"
-          : "Bitcoin",
-      symbol:
-        coinId === "bitcoin" ? "BTC" : coinId === "ethereum" ? "ETH" : "BTC",
-      image:
-        coinId === "bitcoin"
-          ? "https://assets.coingecko.com/coins/images/1/large/bitcoin.png"
-          : coinId === "ethereum"
-          ? "https://assets.coingecko.com/coins/images/279/large/ethereum.png"
-          : "https://assets.coingecko.com/coins/images/1/large/bitcoin.png",
-      current_price:
-        coinId === "bitcoin" ? 45000 : coinId === "ethereum" ? 3200 : 45000,
-      price_change_percentage_24h:
-        coinId === "bitcoin" ? 2.5 : coinId === "ethereum" ? -1.2 : 2.5,
-      market_cap:
-        coinId === "bitcoin"
-          ? 870000000000
-          : coinId === "ethereum"
-          ? 390000000000
-          : 870000000000,
-      total_volume:
-        coinId === "bitcoin"
-          ? 25000000000
-          : coinId === "ethereum"
-          ? 15000000000
-          : 25000000000,
-      circulating_supply:
-        coinId === "bitcoin"
-          ? 19500000
-          : coinId === "ethereum"
-          ? 120000000
-          : 19500000,
-      total_supply:
-        coinId === "bitcoin"
-          ? 21000000
-          : coinId === "ethereum"
-          ? null
-          : 21000000,
-      max_supply:
-        coinId === "bitcoin"
-          ? 21000000
-          : coinId === "ethereum"
-          ? null
-          : 21000000,
-      high_24h:
-        coinId === "bitcoin" ? 46200 : coinId === "ethereum" ? 3350 : 46200,
-      low_24h:
-        coinId === "bitcoin" ? 44800 : coinId === "ethereum" ? 3150 : 44800,
-    };
-    setCoin(mockCoin);
-  }, [coinId]);
+    getCoinDetails();
+  }, [coinId, getCoinDetails]);
 
   const handleWatchlistToggle = () => {
     setIsInWatchlist(!isInWatchlist);
   };
 
-  if (!coin) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-      </div>
-    );
+  const isPositive = (coin?.price_change_percentage_24h ?? 0) > 0;
+
+  if (loading && !coin) {
+    return <Loader />;
   }
-
-  const isPositive = coin.price_change_percentage_24h > 0;
-
-  const formatPrice = (price: number) => {
-    return new Intl.NumberFormat("en-US", {
-      style: "currency",
-      currency: "USD",
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 6,
-    }).format(price);
-  };
-
-  const formatMarketCap = (marketCap: number) => {
-    if (marketCap >= 1e12) return `$${(marketCap / 1e12).toFixed(2)}T`;
-    if (marketCap >= 1e9) return `$${(marketCap / 1e9).toFixed(2)}B`;
-    if (marketCap >= 1e6) return `$${(marketCap / 1e6).toFixed(2)}M`;
-    return `$${marketCap.toLocaleString()}`;
-  };
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -111,7 +93,7 @@ const CoinDetail = () => {
             <Button
               variant="ghost"
               size="icon"
-              onClick={() => navigate("/")}
+              onClick={() => navigate(FE_ROUTE.HOME)}
               className="hover:bg-muted"
             >
               <ArrowLeft className="h-5 w-5" />
@@ -119,16 +101,16 @@ const CoinDetail = () => {
 
             <div className="flex items-center space-x-3">
               <img
-                src={coin.image}
-                alt={coin.name}
+                src={coin?.image}
+                alt={coin?.name}
                 className="w-12 h-12 rounded-full"
               />
               <div>
                 <h1 className="text-2xl font-bold text-foreground">
-                  {coin.name}
+                  {coin?.name}
                 </h1>
                 <p className="text-muted-foreground uppercase text-sm">
-                  {coin.symbol}
+                  {coin?.symbol}
                 </p>
               </div>
             </div>
@@ -157,7 +139,7 @@ const CoinDetail = () => {
                 Current Price
               </p>
               <p className="text-3xl font-bold text-foreground">
-                {formatPrice(coin.current_price)}
+                {formatCryptoPrice(coin?.current_price as number)}
               </p>
               <div
                 className={`flex items-center space-x-1 mt-1 ${
@@ -171,7 +153,7 @@ const CoinDetail = () => {
                 )}
                 <span className="font-medium">
                   {isPositive ? "+" : ""}
-                  {coin.price_change_percentage_24h.toFixed(2)}%
+                  {coin?.price_change_percentage_24h.toFixed(2)}%
                 </span>
               </div>
             </div>
@@ -179,27 +161,27 @@ const CoinDetail = () => {
             <div>
               <p className="text-sm text-muted-foreground mb-1">24h High</p>
               <p className="text-xl font-semibold text-foreground">
-                {formatPrice(coin.high_24h)}
+                {formatCryptoPrice(coin?.high_24h ?? 0)}
               </p>
             </div>
 
             <div>
               <p className="text-sm text-muted-foreground mb-1">24h Low</p>
               <p className="text-xl font-semibold text-foreground">
-                {formatPrice(coin.low_24h)}
+                {formatCryptoPrice(coin?.low_24h ?? 0)}
               </p>
             </div>
 
             <div>
               <p className="text-sm text-muted-foreground mb-1">24h Volume</p>
               <p className="text-xl font-semibold text-foreground">
-                {formatMarketCap(coin.total_volume)}
+                {formatMarketCap(coin?.total_volume ?? 0)}
               </p>
             </div>
           </div>
         </Card>
 
-        <CoinChart coinName={coin.name} />
+        <CoinChart coinName={coin?.name ?? ""} coinId={coinId ?? ""} />
 
         <Card className="p-6 bg-card/50 backdrop-blur-sm border-border/50">
           <h3 className="text-lg font-semibold text-foreground mb-4">
@@ -209,7 +191,7 @@ const CoinDetail = () => {
             <div>
               <p className="text-sm text-muted-foreground mb-1">Market Cap</p>
               <p className="text-xl font-semibold text-foreground">
-                {formatMarketCap(coin.market_cap)}
+                {formatMarketCap(coin?.market_cap ?? 0)}
               </p>
             </div>
 
@@ -218,15 +200,15 @@ const CoinDetail = () => {
                 Circulating Supply
               </p>
               <p className="text-xl font-semibold text-foreground">
-                {coin.circulating_supply.toLocaleString()} {coin.symbol}
+                {coin?.circulating_supply.toLocaleString()} {coin?.symbol}
               </p>
             </div>
 
-            {coin.max_supply && (
+            {coin?.max_supply && (
               <div>
                 <p className="text-sm text-muted-foreground mb-1">Max Supply</p>
                 <p className="text-xl font-semibold text-foreground">
-                  {coin.max_supply.toLocaleString()} {coin.symbol}
+                  {coin?.max_supply.toLocaleString()} {coin?.symbol}
                 </p>
               </div>
             )}
