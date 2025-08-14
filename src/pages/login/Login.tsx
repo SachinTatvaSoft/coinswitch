@@ -100,7 +100,7 @@ const Login = () => {
           <div className="space-y-8">
             <div className="space-y-4">
               <h1 className="text-6xl xl:text-7xl font-bold bg-gradient-primary bg-clip-text text-transparent">
-                CoinWatch
+                CoinSwitch
               </h1>
               <p className="text-xl xl:text-2xl text-muted-foreground max-w-lg">
                 Professional cryptocurrency tracking and portfolio management
@@ -137,7 +137,7 @@ const Login = () => {
           <div className="w-full max-w-md">
             <div className="lg:hidden text-center mb-8">
               <h1 className="text-4xl font-bold bg-gradient-primary bg-clip-text text-transparent">
-                CoinWatch
+                CoinSwitch
               </h1>
               <p className="text-muted-foreground mt-2">
                 Welcome back to your crypto dashboard
@@ -150,7 +150,7 @@ const Login = () => {
                   Welcome Back
                 </CardTitle>
                 <CardDescription>
-                  Sign in to your CoinWatch account
+                  Sign in to your CoinSwitch account
                 </CardDescription>
               </CardHeader>
               <CardContent>
