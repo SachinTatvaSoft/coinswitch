@@ -2,6 +2,7 @@ import { configureStore, combineReducers } from "@reduxjs/toolkit";
 import storage from "redux-persist/lib/storage";
 import { persistReducer, persistStore } from "redux-persist";
 import authReducer from "./slices/authSlice";
+import watchlistReducer from "./slices/watchlistSlice";
 
 const persistConfig = {
   key: "root",
@@ -10,6 +11,7 @@ const persistConfig = {
 
 const rootReducer = combineReducers({
   auth: authReducer,
+  watchlist: watchlistReducer,
 });
 
 const persistedReducer = persistReducer(persistConfig, rootReducer);
